@@ -1,23 +1,57 @@
-import WebSocket from "ws";
+import * as mqtt from 'mqtt';
+import 'dotenv/config';
 
-const ws = new WebSocket("ws://172.19.0.2:8080");
+const topic = process.env.MQTT_TOPIC;
+const brokerHost = process.env.MQTT_BROKER_HOST;
 
-ws.on("open", () => {
-  setInterval(() => {
-    const randomNumber = Math.random() * 15 + 15;
-    const message = JSON.stringify({
-      temperature: randomNumber.toFixed(1),
-      timestamp: new Date().toISOString(),
-    });
-    ws.send(message);
-    console.log(`Sent message: ${message}`);
-  }, 5000);
+if (!brokerHost) {
+  console.error('MQTT Broker hostname not specified!');
+  process.exit(1);
+}
+if (!topic) {
+  console.error('MQTT topic not specified!');
+  process.exit(1);
+}
+
+const client = mqtt.connect(`mqtt://${brokerHost}`);
+
+client.on('connect', () => {
+  console.log('Connected to the broker. Start generating data');
+
+  client.subscribe(topic, (err) => {
+    if (!err) {
+      console.log(`Subscribed to topic: ${topic}`);
+    }
+  });
 });
 
-ws.on("message", (data) => {
-  console.log(`Received message: ${data}`);
-});
+const startValue = parseFloat(process.env.INITIAL_VALUE ?? '50');
+const fluctuationSize = parseFloat(process.env.FLUCTUATION_SIZE ?? '1');
+const minValue = parseFloat(process.env.MIN_VALUE ?? '30');
+const maxValue = parseFloat(process.env.MAX_VALUE ?? '80');
 
-ws.on("close", () => {
-  console.log("WebSocket connection closed");
-});
+let currentValue = startValue;
+
+setInterval(() => {
+  currentValue = generateNewValue(
+    currentValue,
+    fluctuationSize,
+    minValue,
+    maxValue
+  );
+  console.log(`new value: ${currentValue.toFixed(2)}`);
+  client.publish(topic, currentValue.toFixed(2));
+}, 1000);
+
+function generateNewValue(
+  currentValue: number,
+  fluctuationMax: number,
+  minValue: number,
+  maxValue: number
+) {
+  const fluctuation = Math.random() * 2 * fluctuationMax - fluctuationMax;
+  const newValue = currentValue + fluctuation;
+  if (newValue < minValue) return minValue;
+  if (newValue > maxValue) return maxValue;
+  return newValue;
+}
