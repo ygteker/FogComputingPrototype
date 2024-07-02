@@ -56,7 +56,7 @@ These values can be adjusted by setting the corresponding environment variables.
 ## How to Run Locally
 
 1. Install dependencies with `npm install`.
-2. Start the application with `npm start`.
+2. Start the application with `npm run start:dev`.
 
 ## Notes
 
