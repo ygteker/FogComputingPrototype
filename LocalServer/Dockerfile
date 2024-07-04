@@ -1,10 +1,23 @@
-FROM node:14-alpine
+ARG NODE_VERSION=lts
 
-WORKDIR /home/app
+FROM node:${NODE_VERSION}-alpine as build
+WORKDIR /app
 
-COPY package.json tsconfig.json ./
-RUN mkdir src
-COPY src src
-RUN npm install && npx tsc
+COPY package*.json .
 
-CMD ["npm", "start"]
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+FROM node:${NODE_VERSION}-alpine as production
+WORKDIR /app
+
+COPY package*.json .
+
+RUN npm ci --only=production
+
+COPY --from=build /app/build .
+
+CMD ["node", "app.js"]
