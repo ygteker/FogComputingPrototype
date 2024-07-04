@@ -9,3 +9,10 @@ services:
       - '9001:9001'
     volumes:
       - ./config:/mosquitto/config
+
+  sensor1:
+    image: sensor:latest
+    container_name: sensor1
+    environment:
+      MQTT_TOPIC: 'sensor1/value'
+      MQTT_BROKER_HOST: 'mosquitto'
