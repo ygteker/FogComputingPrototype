@@ -1,20 +1,50 @@
-import WebSocket from "ws";
-import { addData } from "./db-actions";
+import { connect } from 'mqtt';
+import WebSocket from 'ws';
+import { SensorDataRepository } from './db-actions';
+import { SensorDataDto } from './types/sensor-data.dto';
 
-const server = new WebSocket.Server({ port: 8080 });
+// MQTT config
+const mqttBrokerHost = 'localhost';
+const mqttTopic = 'sensor1/value';
 
-server.on("connection", (socket) => {
-  console.log("A new client connected");
+// WebSocket config
+const socketAddress = 'localhost:8080';
 
-  socket.on("message", (message: { value: string; date: string }) => {
-    console.log("Received message:", message);
-    //TODO include after network is set up
-    // addData("test", message.value, "test", new Date(message.date));
-  });
+const socket = new WebSocket(`ws://${socketAddress}`);
+const mqttClient = connect(`mqtt://${mqttBrokerHost}`);
+const sensorDataRepository = new SensorDataRepository();
 
-  socket.on("close", () => {
-    console.log("Client disconnected");
+mqttClient.on('connect', () => {
+  console.log('Connected to the MQTT broker.');
+
+  mqttClient.subscribe(mqttTopic, (err) => {
+    if (!err) {
+      console.log(`Subscribed to topic: ${mqttTopic}`);
+    }
   });
 });
 
-console.log("WebSocket server is running on ws://localhost:8080");
+mqttClient.on('message', (topic, payload) => {
+  const sensor = topic.split('/')[0];
+  console.log(`received data from ${sensor}`, payload.toString());
+  const incomingData: SensorDataDto = JSON.parse(payload.toString());
+  sensorDataRepository
+    .addData(sensor, incomingData.value, 'celsius', incomingData.timestamp)
+    .then((id) => console.log(`Stored data with id: ${id}`));
+});
+
+socket.on('open', () => {
+  console.log('Connected to the server');
+
+  socket.on('message', (message) => {
+    console.log(`Received from server: ${message}`);
+  });
+
+  socket.on('close', () => {
+    console.log('Disconnected from the server');
+  });
+
+  socket.on('error', (error) => {
+    console.error(`WebSocket error: ${error}`);
+  });
+});

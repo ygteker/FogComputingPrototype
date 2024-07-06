@@ -3,5 +3,5 @@ export default interface Data {
   sensor: string;
   value: string;
   unit: string;
-  time: string;
+  timestamp: string;
 }
