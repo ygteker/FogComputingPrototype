@@ -1,5 +1,5 @@
 {
-  "name": "localserver",
+  "name": "local-component",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -8,7 +8,7 @@
     "start": "node dist/app.js",
     "start:dev": "npx nodemon",
     "build": "rimraf ./build && tsc",
-    "build:docker": "docker build -t server ."
+    "build:docker": "docker build -t local ."
   },
   "keywords": [],
   "author": "",
@@ -17,7 +17,8 @@
     "dotenv": "^16.4.5",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
-    "ws": "^8.17.0"
+    "ws": "^8.17.0",
+    "mqtt": "^5.7.3"
   },
   "devDependencies": {
     "@tsconfig/node-lts": "^20.1.3",
