@@ -20,4 +20,4 @@ RUN npm ci --only=production
 
 COPY --from=build /app/build .
 
-CMD ["node", "src/app.js"]
+CMD ["node", "app.js"]
