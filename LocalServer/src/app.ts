@@ -1,6 +1,6 @@
 import { connect } from 'mqtt';
 import WebSocket from 'ws';
-import { SensorDataRepository } from './db-actions';
+import { SensorDataRepository } from './sensor-data.repository';
 import { SensorDataDto } from './types/sensor-data.dto';
 
 // MQTT config
