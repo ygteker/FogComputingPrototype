@@ -1,5 +1,6 @@
-import * as mqtt from 'mqtt';
 import 'dotenv/config';
+import { SensorData } from './model/sensor-data';
+import { connect } from 'mqtt';
 
 const topic = process.env.MQTT_TOPIC;
 const brokerHost = process.env.MQTT_BROKER_HOST;
@@ -13,35 +14,33 @@ if (!topic) {
   process.exit(1);
 }
 
-const client = mqtt.connect(`mqtt://${brokerHost}`);
+const client = connect(`mqtt://${brokerHost}`);
 
 client.on('connect', () => {
   console.log('Connected to the broker. Start generating data');
-
-  client.subscribe(topic, (err) => {
-    if (!err) {
-      console.log(`Subscribed to topic: ${topic}`);
-    }
-  });
+  startGeneratingData(topic);
 });
 
-const startValue = parseFloat(process.env.INITIAL_VALUE ?? '50');
-const fluctuationSize = parseFloat(process.env.FLUCTUATION_SIZE ?? '1');
-const minValue = parseFloat(process.env.MIN_VALUE ?? '30');
-const maxValue = parseFloat(process.env.MAX_VALUE ?? '80');
+function startGeneratingData(topic: string) {
+  const startValue = parseFloat(process.env.INITIAL_VALUE ?? '50');
+  const fluctuationSize = parseFloat(process.env.FLUCTUATION_SIZE ?? '1');
+  const minValue = parseFloat(process.env.MIN_VALUE ?? '30');
+  const maxValue = parseFloat(process.env.MAX_VALUE ?? '80');
 
-let currentValue = startValue;
+  let currentValue = startValue;
 
-setInterval(() => {
-  currentValue = generateNewValue(
-    currentValue,
-    fluctuationSize,
-    minValue,
-    maxValue
-  );
-  console.log(`new value: ${currentValue.toFixed(2)}`);
-  client.publish(topic, currentValue.toFixed(2));
-}, 1000);
+  setInterval(() => {
+    currentValue = generateNewValue(
+      currentValue,
+      fluctuationSize,
+      minValue,
+      maxValue
+    );
+    console.log(`new value: ${currentValue.toFixed(2)}`);
+    const data: SensorData = new SensorData(currentValue);
+    client.publish(topic, data.stringify());
+  }, 1000);
+}
 
 function generateNewValue(
   currentValue: number,
