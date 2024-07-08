@@ -1,9 +1,10 @@
 import sqlite3, { Database } from "sqlite3";
+import Message from "./types";
 
-export class SensorDataRepository {
+export class MessageRepository {
   #db: Database;
   constructor() {
-    this.#db = new sqlite3.Database("database.db");
+    this.#db = new sqlite3.Database("cloudDB.db");
     this.#db.run(`
   CREATE TABLE IF NOT EXISTS data (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -14,16 +15,11 @@ export class SensorDataRepository {
   )
 `);
   }
-  addData(
-    sensor: string,
-    value: string,
-    unit: string,
-    timestamp: string
-  ): Promise<number> {
+  addData(message: Message): Promise<number> {
     return new Promise((resolve, reject) => {
       this.#db.run(
         "INSERT INTO data (sensor, value, unit, timestamp) VALUES (?, ?, ?, ?)",
-        [sensor, value, unit, timestamp],
+        [message.sensor, message.value, message.unit, message.timestamp],
         function (err) {
           if (err) {
             reject(err);
