@@ -14,23 +14,23 @@ const sensorDataRepository = new SensorDataRepository();
 const messageService = new MessageService(socketAddress);
 
 mqttClient.on('connect', () => {
-  console.log('Connected to the MQTT broker.');
+  console.log(`[MQTT] Connected to the broker on ${mqttBrokerHost}`);
 
   mqttClient.subscribe(mqttTopic, (err) => {
     if (!err) {
-      console.log(`Subscribed to topic: ${mqttTopic}`);
+      console.log(`[MQTT] Subscribed the topic: ${mqttTopic}`);
     }
   });
 });
 
 mqttClient.on('message', (topic, payload) => {
   const sensor = topic.split('/')[0];
-  console.log(`received data from ${sensor}`, payload.toString());
+  console.log(`[MQTT] received data from ${sensor}:`, payload.toString());
   const incomingData: SensorDataDto = JSON.parse(payload.toString());
   sensorDataRepository
     .addData(sensor, incomingData.value, 'celsius', incomingData.timestamp)
     .then((id) => {
-      console.log(`Stored data with id: ${id}`);
+      console.log(`[DB] Stored data with id: ${id}`);
       messageService.addMessageToQueue({
         id: id,
         sensor: sensor,
