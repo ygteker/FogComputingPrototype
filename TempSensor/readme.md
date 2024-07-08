@@ -9,8 +9,10 @@ You can run this application using Docker. Follow these steps:
 1. Build the Docker image:
 
    ```
-   docker build -t sensor-data-generator .
+   npm run build:docker
    ```
+
+   it is going to build a docker image named `sensor`
 
 2. Run the Docker container, setting the necessary environment variables:
    ```plaintext
@@ -21,11 +23,12 @@ You can run this application using Docker. Follow these steps:
      --env FLUCTUATION_SIZE=1 \
      --env MIN_VALUE=30 \
      --env MAX_VALUE=80 \
+     --env UNIT="celsius" \
      --name sensor-app \
-     sensor-data-generator
+     sensor
    ```
 
-Adjust the environment variables (`MQTT_TOPIC`, `MQTT_BROKER_HOST`, `INITIAL_VALUE`, `FLUCTUATION_SIZE`, `MIN_VALUE`, `MAX_VALUE`) as per your MQTT broker configuration and simulation requirements.
+Adjust the environment variables (`MQTT_TOPIC`, `MQTT_BROKER_HOST`, `INITIAL_VALUE`, `FLUCTUATION_SIZE`, `MIN_VALUE`, `MAX_VALUE`, `UNIT`, `MESSAGE_INTERVAL`) as per your MQTT broker configuration and simulation requirements.
 
 ## Environment Variables
 
@@ -38,6 +41,8 @@ INITIAL_VALUE=50
 FLUCTUATION_SIZE=1
 MIN_VALUE=30
 MAX_VALUE=80
+UNIT="celsius",
+MESSAGE_INTERVAL=1000 (in ms)
 ```
 
 Adjust the `MQTT_BROKER_HOST` variable to match your MQTT broker's host address.
@@ -50,6 +55,7 @@ The application uses the following default simulation parameters:
 - **FLUCTUATION_SIZE**: 1
 - **MIN_VALUE**: 30
 - **MAX_VALUE**: 80
+- **MESSAGE_INTERVAL**: 1000
 
 These values can be adjusted by setting the corresponding environment variables.
 
