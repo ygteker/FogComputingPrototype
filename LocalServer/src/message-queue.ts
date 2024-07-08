@@ -25,20 +25,15 @@ export class MessageQueue {
 
   #added$ = this.add$.pipe(tap(console.log));
 
-  #delivered$ = this.delivered$.pipe(
-    tap((id) =>
-      this.#queue$.next(
-        this.#queue$.getValue().filter((sData) => sData.id !== id)
-      )
-    ),
-    share()
-  );
-
   constructor() {
     this.add$.subscribe((sData) =>
       this.#queue$.next([...this.#queue$.getValue(), sData])
     );
-    this.#delivered$.subscribe();
+    this.delivered$.subscribe((id) =>
+      this.#queue$.next(
+        this.#queue$.getValue().filter((sData) => sData.id !== id)
+      )
+    );
   }
 
   get added$() {
@@ -53,7 +48,7 @@ export class MessageQueue {
   }
 
   private getRemovedId(removedId: number) {
-    return this.#delivered$.pipe(
+    return this.delivered$.pipe(
       filter((id) => id === removedId),
       take(1)
     );
