@@ -6,11 +6,9 @@ import {
   map,
   merge,
   mergeMap,
-  share,
   Subject,
   take,
   takeUntil,
-  tap,
 } from 'rxjs';
 import SensorData from './types/data';
 
@@ -20,12 +18,24 @@ const RESEND_AFTER = 3_000;
 export class MessageQueue {
   #queue$ = new BehaviorSubject<SensorData[]>([]);
 
+  // events
   add$ = new Subject<SensorData>();
   delivered$ = new Subject<number>();
 
-  #added$ = this.add$.pipe(tap(console.log));
+  // selectors
+  get nextMessageToSend$() {
+    return merge(from(this.#queue$.getValue()), this.add$).pipe(
+      mergeMap((added) =>
+        interval(RESEND_AFTER).pipe(
+          takeUntil(this.getRemovedId(added.id)),
+          map(() => added)
+        )
+      )
+    );
+  }
 
   constructor() {
+    // reducers
     this.add$.subscribe((sData) =>
       this.#queue$.next([...this.#queue$.getValue(), sData])
     );
@@ -36,26 +46,10 @@ export class MessageQueue {
     );
   }
 
-  get added$() {
-    return merge(this.#queuedMessages$, this.#added$).pipe(
-      mergeMap((added) =>
-        interval(RESEND_AFTER).pipe(
-          takeUntil(this.getRemovedId(added.id)),
-          map(() => added)
-        )
-      )
-    );
-  }
-
   private getRemovedId(removedId: number) {
     return this.delivered$.pipe(
       filter((id) => id === removedId),
       take(1)
     );
-  }
-
-  get #queuedMessages$() {
-    console.log(this.#queue$.getValue());
-    return from(this.#queue$.getValue());
   }
 }
