@@ -1,22 +1,63 @@
-import { BehaviorSubject, EMPTY, startWith, switchMap } from 'rxjs';
+import {
+  BehaviorSubject,
+  distinctUntilChanged,
+  EMPTY,
+  expand,
+  of,
+  switchMap,
+  tap,
+  timer,
+} from 'rxjs';
 import { WebSocket } from 'ws';
 import { MessageQueue } from './message-queue';
 import SensorData from './types/data';
 
 export class MessageService {
   #socketAddress: string;
-  #socket: WebSocket;
+  #socket: WebSocket | null = null;
   #messageQueue = new MessageQueue();
-  #isSocketAlive$ = new BehaviorSubject<boolean>(false);
+  #setSocketAlive$ = new BehaviorSubject<boolean>(false);
+  #isSocketAlive$ = this.#setSocketAlive$
+    .asObservable()
+    .pipe(distinctUntilChanged());
 
   constructor(socketAddress: string) {
     this.#socketAddress = socketAddress;
-    this.#socket = new WebSocket(`ws://${this.#socketAddress}`);
-    this.prepareMessagingTriggers();
-    this.#isSocketAlive$.subscribe(console.log);
+    console.log(`[WebSocket] Connecting to the websocket on ${socketAddress}`);
+    this.init();
   }
 
-  private prepareMessagingTriggers() {
+  addMessageToQueue(message: SensorData) {
+    this.#messageQueue.add$.next(message);
+  }
+
+  private init() {
+    const delayIncrementMaxCount = 5;
+    const maxReconnectionAttemptDelay =
+      Math.pow(2, delayIncrementMaxCount) * 1_000;
+    this.#isSocketAlive$
+      .pipe(
+        switchMap((alive) => {
+          if (alive) {
+            return EMPTY;
+          }
+          return of(null).pipe(
+            // it doubles delay between attempts until it reaches maxReconnectionAttemptDelay
+            expand((_, i) => {
+              const delay = 1000 * Math.pow(2, Math.min(5, i));
+              return timer(delay).pipe(
+                tap(() => {
+                  this.#socket = this.createWebSocket(
+                    Math.min(maxReconnectionAttemptDelay, delay * 2)
+                  );
+                })
+              );
+            })
+          );
+        })
+      )
+      .subscribe();
+
     this.#isSocketAlive$
       .pipe(
         switchMap((isAlive) =>
@@ -24,43 +65,56 @@ export class MessageService {
         )
       )
       .subscribe((sData) => this.send(sData));
+  }
 
-    setInterval(
-      () => this.#isSocketAlive$.next(!this.#isSocketAlive$.getValue()),
-      10000
-    );
+  private createWebSocket(retryDelay: number): WebSocket {
+    const ws = new WebSocket(`ws://${this.#socketAddress}`);
 
-    this.#socket.on('open', () => {
-      console.log('Connected to the server');
-      this.#isSocketAlive$.next(true);
+    ws.onopen = () => {
+      console.log(
+        '[WebSocket] Connection successful. Start data transmission...'
+      );
+      this.#setSocketAlive$.next(true);
+    };
 
-      this.#socket.on('message', (confirmation) => {
-        const parsedConfirmation = JSON.parse(confirmation.toString()) as {
-          id: number;
-        };
-        console.log(
-          `Received confirmation for data point with id: ${parsedConfirmation.id}`
+    ws.onmessage = ({ data }) => {
+      const parsedConfirmation = JSON.parse(data.toString()) as {
+        id: number;
+      };
+      console.log(
+        `[WebSocket] data point with id: ${parsedConfirmation.id} transmitted successfully`
+      );
+      this.#messageQueue.delivered$.next(parsedConfirmation.id);
+    };
+
+    ws.onclose = () => {
+      // check if it is a reconnection attempt
+      if (!this.#setSocketAlive$.getValue()) {
+        return;
+      }
+      console.log('[WebSocket] Connection closed. Reconnecting...');
+      this.#setSocketAlive$.next(false);
+    };
+
+    ws.onerror = (error) => {
+      // check if it is a reconnection attempt
+      if (!this.#setSocketAlive$.getValue()) {
+        console.error(
+          `[WebSocket] Connection attempt failed. Retry in ${
+            retryDelay / 1000
+          } seconds...`
         );
-        this.#messageQueue.delivered$.next(parsedConfirmation.id);
-      });
+        return;
+      }
+      console.error('[WebSocket] Connection error:', error);
+      this.#setSocketAlive$.next(false);
+    };
 
-      this.#socket.on('close', () => {
-        console.log('Connection closed');
-        this.#isSocketAlive$.next(false);
-      });
-
-      this.#socket.on('error', (error) => {
-        console.error(`WebSocket error: ${error}`);
-      });
-    });
+    return ws;
   }
 
   private send(sData: SensorData) {
-    console.log('sending data with id: ' + sData.id);
-    this.#socket.send(JSON.stringify(sData));
-  }
-
-  addMessageToQueue(message: SensorData) {
-    this.#messageQueue.add$.next(message);
+    console.log('[WebSocket] sending data point with id: ' + sData.id);
+    this.#socket?.send(JSON.stringify(sData));
   }
 }
