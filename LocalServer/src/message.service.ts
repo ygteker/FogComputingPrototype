@@ -19,7 +19,9 @@ export class MessageService {
   private prepareMessagingTriggers() {
     this.#isSocketAlive$
       .pipe(
-        switchMap((isAlive) => (isAlive ? this.#messageQueue.added$ : EMPTY))
+        switchMap((isAlive) =>
+          isAlive ? this.#messageQueue.nextMessageToSend$ : EMPTY
+        )
       )
       .subscribe((sData) => this.send(sData));
 
