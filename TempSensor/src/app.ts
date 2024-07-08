@@ -4,6 +4,8 @@ import { connect } from 'mqtt';
 
 const topic = process.env.MQTT_TOPIC;
 const brokerHost = process.env.MQTT_BROKER_HOST;
+const messageInterval = parseInt(process.env.MESSAGE_INTERVAL ?? '1000');
+const unit = process.env.UNIT;
 
 if (!brokerHost) {
   console.error('MQTT Broker hostname not specified!');
@@ -37,9 +39,9 @@ function startGeneratingData(topic: string) {
       maxValue
     );
     console.log(`new value: ${currentValue.toFixed(2)}`);
-    const data: SensorData = new SensorData(currentValue);
+    const data: SensorData = new SensorData(currentValue, unit);
     client.publish(topic, data.stringify());
-  }, 1000);
+  }, messageInterval);
 }
 
 function generateNewValue(
