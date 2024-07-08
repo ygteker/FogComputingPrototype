@@ -4,4 +4,3 @@ build
 *.db
 dist
 .env
-package-lock.json
