@@ -12,6 +12,14 @@ const socketAddress = 'localhost:8080';
 const mqttClient = connect(`mqtt://${mqttBrokerHost}`);
 const sensorDataRepository = new SensorDataRepository();
 const messageService = new MessageService(socketAddress);
+messageService.messageDelivered$.subscribe((messageId) =>
+  sensorDataRepository.setAsDelivered(messageId)
+);
+sensorDataRepository
+  .getNotDelivered()
+  .then((messages) =>
+    messages.forEach((message) => messageService.addMessageToQueue(message))
+  );
 
 mqttClient.on('connect', () => {
   console.log(`[MQTT] Connected to the broker on ${mqttBrokerHost}`);

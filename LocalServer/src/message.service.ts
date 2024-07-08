@@ -3,6 +3,8 @@ import {
   distinctUntilChanged,
   EMPTY,
   expand,
+  filter,
+  Observable,
   of,
   switchMap,
   tap,
@@ -20,6 +22,10 @@ export class MessageService {
   #isSocketAlive$ = this.#setSocketAlive$
     .asObservable()
     .pipe(distinctUntilChanged());
+  #messageDelivered$ = new BehaviorSubject<number | null>(null);
+  messageDelivered$: Observable<number> = this.#messageDelivered$.pipe(
+    filter((messageId): messageId is number => messageId != null)
+  );
 
   constructor(socketAddress: string) {
     this.#socketAddress = socketAddress;
@@ -65,6 +71,9 @@ export class MessageService {
         )
       )
       .subscribe((sData) => this.send(sData));
+    this.messageDelivered$.subscribe((messageId) =>
+      this.#messageQueue.delivered$.next(messageId)
+    );
   }
 
   private createWebSocket(retryDelay: number): WebSocket {
@@ -84,7 +93,7 @@ export class MessageService {
       console.log(
         `[WebSocket] data point with id: ${parsedConfirmation.id} transmitted successfully`
       );
-      this.#messageQueue.delivered$.next(parsedConfirmation.id);
+      this.#messageDelivered$.next(parsedConfirmation.id);
     };
 
     ws.onclose = () => {

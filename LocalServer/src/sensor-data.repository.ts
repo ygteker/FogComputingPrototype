@@ -1,28 +1,36 @@
-import sqlite3, { Database } from "sqlite3";
+import sqlite3, { Database } from 'sqlite3';
 
 export class SensorDataRepository {
   #db: Database;
+  #initialized: Promise<void>;
   constructor() {
-    this.#db = new sqlite3.Database("database.db");
-    this.#db.run(`
+    this.#db = new sqlite3.Database('database.db');
+    this.#initialized = new Promise<void>((resolve, reject) => {
+      this.#db.run(
+        `
   CREATE TABLE IF NOT EXISTS data (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     sensor TEXT,
     value TEXT,
     unit TEXT,
-    timestamp TEXT
+    timestamp TEXT,
+    delivered BOOLEAN
   )
-`);
+`,
+        (err) => (err ? reject(err) : resolve())
+      );
+    });
   }
-  addData(
+  async addData(
     sensor: string,
     value: string,
     unit: string,
     timestamp: string
   ): Promise<number> {
+    await this.#initialized;
     return new Promise((resolve, reject) => {
       this.#db.run(
-        "INSERT INTO data (sensor, value, unit, timestamp) VALUES (?, ?, ?, ?)",
+        'INSERT INTO data (sensor, value, unit, timestamp, delivered) VALUES (?, ?, ?, ?, false)',
         [sensor, value, unit, timestamp],
         function (err) {
           if (err) {
@@ -35,9 +43,10 @@ export class SensorDataRepository {
     });
   }
 
-  getAllData(): Promise<any[]> {
+  async getAllData(): Promise<any[]> {
+    await this.#initialized;
     return new Promise((resolve, reject) => {
-      this.#db.all("SELECT * FROM data", (err, rows) => {
+      this.#db.all('SELECT * FROM data', (err, rows) => {
         if (err) {
           reject(err);
         } else {
@@ -47,16 +56,44 @@ export class SensorDataRepository {
     });
   }
 
-  updateData(
+  async setAsDelivered(id: number): Promise<void> {
+    await this.#initialized;
+    return new Promise((resolve, reject) => {
+      this.#db.run(
+        'UPDATE data SET delivered = true WHERE id = ?',
+        [id],
+        (err) => (err ? reject(err) : resolve())
+      );
+    });
+  }
+
+  async getNotDelivered(): Promise<any[]> {
+    await this.#initialized;
+    return new Promise((resolve, reject) => {
+      this.#db.all(
+        'SELECT * FROM data WHERE delivered = false',
+        (err, rows) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
+        }
+      );
+    });
+  }
+
+  async updateData(
     id: number,
     sensor: string,
     value: string,
     unit: string,
     timestamp: Date
   ): Promise<void> {
+    await this.#initialized;
     return new Promise((resolve, reject) => {
       this.#db.run(
-        "UPDATE data SET sensor = ?, value = ?, unit = ?, timestamp = ? WHERE id = ?",
+        'UPDATE data SET sensor = ?, value = ?, unit = ?, timestamp = ? WHERE id = ?',
         [sensor, value, unit, timestamp.toISOString(), id],
         function (err) {
           if (err) {
@@ -70,9 +107,10 @@ export class SensorDataRepository {
   }
 
   // Delete a user by ID
-  deleteData(id: number): Promise<void> {
+  async deleteData(id: number): Promise<void> {
+    await this.#initialized;
     return new Promise((resolve, reject) => {
-      this.#db.run("DELETE FROM data WHERE id = ?", [id], function (err) {
+      this.#db.run('DELETE FROM data WHERE id = ?', [id], function (err) {
         if (err) {
           reject(err);
         } else {
