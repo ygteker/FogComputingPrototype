@@ -38,7 +38,7 @@ function startGeneratingData(topic: string) {
       minValue,
       maxValue
     );
-    console.log(`new value: ${currentValue.toFixed(2)}`);
+    console.log(`new value: ${currentValue.toFixed(2)} ${unit}`);
     const data: SensorData = new SensorData(currentValue, unit);
     client.publish(topic, data.stringify());
   }, messageInterval);
