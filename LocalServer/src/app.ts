@@ -1,13 +1,26 @@
+import 'dotenv/config';
 import { connect } from 'mqtt';
 import { MessageService } from './message.service';
 import { SensorDataRepository } from './sensor-data.repository';
 import { SensorDataDto } from './types/sensor-data.dto';
 
 // MQTT config
-const mqttBrokerHost = 'localhost';
-const mqttTopic = 'sensor1/value';
+const mqttBrokerHost = process.env.MQTT_BROKER_HOST;
+const mqttTopics = process.env.MQTT_TOPICS?.split(',');
+const socketAddress = process.env.WS_SERVER_URL;
 
-const socketAddress = 'localhost:8080';
+if (!mqttBrokerHost) {
+  console.error('MQTT Broker hostname not specified!');
+  process.exit(1);
+}
+if (!mqttTopics) {
+  console.error('MQTT topics not specified!');
+  process.exit(1);
+}
+if (!socketAddress) {
+  console.error('WebSocket server URL not specified!');
+  process.exit(1);
+}
 
 const mqttClient = connect(`mqtt://${mqttBrokerHost}`);
 const sensorDataRepository = new SensorDataRepository();
@@ -24,10 +37,12 @@ sensorDataRepository
 mqttClient.on('connect', () => {
   console.log(`[MQTT] Connected to the broker on ${mqttBrokerHost}`);
 
-  mqttClient.subscribe(mqttTopic, (err) => {
-    if (!err) {
-      console.log(`[MQTT] Subscribed the topic: ${mqttTopic}`);
-    }
+  mqttTopics.forEach((topic) => {
+    mqttClient.subscribe(topic, (err) => {
+      if (!err) {
+        console.log(`[MQTT] Subscribed the topic: ${topic}`);
+      }
+    });
   });
 });
 
@@ -36,7 +51,12 @@ mqttClient.on('message', (topic, payload) => {
   console.log(`[MQTT] received data from ${sensor}:`, payload.toString());
   const incomingData: SensorDataDto = JSON.parse(payload.toString());
   sensorDataRepository
-    .addData(sensor, incomingData.value, 'celsius', incomingData.timestamp)
+    .addData(
+      sensor,
+      incomingData.value,
+      incomingData.unit,
+      incomingData.timestamp
+    )
     .then((id) => {
       console.log(`[DB] Stored data with id: ${id}`);
       messageService.addMessageToQueue({
@@ -44,7 +64,7 @@ mqttClient.on('message', (topic, payload) => {
         sensor: sensor,
         timestamp: incomingData.timestamp,
         value: incomingData.value,
-        unit: 'celsius',
+        unit: incomingData.unit,
       });
     });
 });

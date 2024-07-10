@@ -1,22 +1,23 @@
+import 'dotenv/config';
 import {
   BehaviorSubject,
   filter,
   from,
-  interval,
   map,
   merge,
   mergeMap,
   Subject,
   take,
   takeUntil,
+  timer,
 } from 'rxjs';
 import SensorData from './types/data';
 
-// 3 seconds
-const RESEND_AFTER = 3_000;
-
 export class MessageQueue {
   #queue$ = new BehaviorSubject<SensorData[]>([]);
+  #confirmationTimeout: number = parseInt(
+    process.env.CONFIRMATION_TIMEOUT ?? '3000'
+  );
 
   // events
   add$ = new Subject<SensorData>();
@@ -26,7 +27,7 @@ export class MessageQueue {
   get nextMessageToSend$() {
     return merge(from(this.#queue$.getValue()), this.add$).pipe(
       mergeMap((added) =>
-        interval(RESEND_AFTER).pipe(
+        timer(0, this.#confirmationTimeout).pipe(
           takeUntil(this.getRemovedId(added.id)),
           map(() => added)
         )
