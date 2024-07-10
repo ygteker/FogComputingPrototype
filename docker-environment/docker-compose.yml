@@ -12,7 +12,7 @@ services:
     image: sensor:latest
     container_name: tempSensor
     environment:
-      MQTT_TOPIC: 'cpu/temperature'
+      MQTT_TOPIC: 'cpuTemperature'
       MQTT_BROKER_HOST: 'mosquitto'
       INITIAL_VALUE: 50
       FLUCTUATION_SIZE: 1
@@ -25,7 +25,7 @@ services:
     image: sensor:latest
     container_name: fanSensor
     environment:
-      MQTT_TOPIC: 'fan/speed'
+      MQTT_TOPIC: 'fanSpeed'
       MQTT_BROKER_HOST: 'mosquitto'
       INITIAL_VALUE: 800
       FLUCTUATION_SIZE: 30
@@ -38,7 +38,7 @@ services:
     image: sensor:latest
     container_name: cpuSensor
     environment:
-      MQTT_TOPIC: 'cpu/utilization'
+      MQTT_TOPIC: 'cpuUtilization'
       MQTT_BROKER_HOST: 'mosquitto'
       INITIAL_VALUE: 30
       FLUCTUATION_SIZE: 10
@@ -52,7 +52,7 @@ services:
     container_name: local-component
     environment:
       MQTT_BROKER_HOST: 'mosquitto'
-      MQTT_TOPICS: 'cpu/temperature,cpu/utilization,fan/speed'
+      MQTT_TOPICS: 'cpuTemperature,cpuUtilization,fanSpeed'
       WS_SERVER_URL: 'cloudComponent:8080'
       CONFIRMATION_TIMEOUT: 5000
 
