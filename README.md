@@ -254,5 +254,5 @@ These values can be adjusted by setting the corresponding environment variables.
 - Ensure the MQTT broker specified in `MQTT_BROKER_HOST` is running and accessible from the application.
 ## Thoguht Process
 
-<img width="1182" alt="Screenshot 2024-07-10 at 22 46 10" src="https://github.com/ygteker/FogComputingPrototype/assets/30394534/bdd973f4-965c-4d73-9476-5f24e22f4938">
-![Screenshot 2024-07-10 at 19 45 19](https://github.com/ygteker/FogComputingPrototype/assets/30394534/306868db-f27d-431f-9d8b-daf2362ff73d)
+<img width="1182" alt="Screenshot 2024-07-10 at 22 46 10" src="https://github.com/ygteker/FogComputingPrototype/assets/30394534/69015094-e94d-4d3a-b479-dd2766971164">
+![Screenshot 2024-07-10 at 19 45 45](https://github.com/ygteker/FogComputingPrototype/assets/30394534/989e8073-63a7-4811-bc85-9bd05263387b)
