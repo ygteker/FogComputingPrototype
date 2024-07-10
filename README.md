@@ -26,6 +26,7 @@ To install and set up the LocalServer, follow these steps:
 Once the LocalServer is up and running, you can perform various tasks, such as:
 
 - Registering new Fog Nodes.
+
 - Managing data processing and distribution.
 - Monitoring the status of connected Fog Nodes.
 
@@ -253,5 +254,5 @@ These values can be adjusted by setting the corresponding environment variables.
 - Ensure the MQTT broker specified in `MQTT_BROKER_HOST` is running and accessible from the application.
 ## Thoguht Process
 
-![Screenshot 2024-07-10 at 19 45 45](https://github.com/ygteker/FogComputingPrototype/assets/30394534/c538c9c0-733f-435d-8a04-173915bf6cae)
+<img width="1182" alt="Screenshot 2024-07-10 at 22 46 10" src="https://github.com/ygteker/FogComputingPrototype/assets/30394534/bdd973f4-965c-4d73-9476-5f24e22f4938">
 ![Screenshot 2024-07-10 at 19 45 19](https://github.com/ygteker/FogComputingPrototype/assets/30394534/306868db-f27d-431f-9d8b-daf2362ff73d)
