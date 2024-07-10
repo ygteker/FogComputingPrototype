@@ -1,8 +1,12 @@
 import { WebSocketServer } from 'ws';
 import Message from './types';
 import { MessageRepository } from './message.repository';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
-const server = new WebSocketServer({ port: 8080 });
+const PORT = parseInt(process.env.PORT || '8080');
+const URL = process.env.URL || 'localhost';
+const server = new WebSocketServer({ port: PORT });
 const repository = new MessageRepository();
 
 server.on('connection', (socket) => {
@@ -31,9 +35,14 @@ server.on('connection', (socket) => {
 });
 
 const addData = async (message: Message) => {
+  const prevEntry = await repository.getDataWithId(message.id);
+  if (prevEntry) {
+    console.log('Data already exists in the database. Skipping...');
+    return;
+  }
   repository.addData(message).then((id) => {
     console.log(`Stored data with id: ${id}`);
   });
 };
 
-console.log('WebSocket server is running on ws://localhost:8080');
+console.log(`WebSocket server is running on ws://${URL}:${PORT}`);

@@ -89,4 +89,20 @@ export class MessageRepository {
   closeDatabase(): void {
     this.#db.close();
   }
+
+  getDataWithId(messageId: number): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.#db.get(
+        'SELECT * FROM data WHERE messageId = ?',
+        [messageId],
+        (err, row) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(row);
+          }
+        }
+      );
+    });
+  }
 }
