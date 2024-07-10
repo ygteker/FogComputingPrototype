@@ -8,9 +8,56 @@ services:
     volumes:
       - ./config:/mosquitto/config
 
-  sensor1:
+  tempSensor:
     image: sensor:latest
-    container_name: sensor1
+    container_name: tempSensor
     environment:
-      MQTT_TOPIC: 'sensor1/value'
+      MQTT_TOPIC: 'cpu/temperature'
       MQTT_BROKER_HOST: 'mosquitto'
+      INITIAL_VALUE: 50
+      FLUCTUATION_SIZE: 1
+      MIN_VALUE: 30
+      MAX_VALUE: 80
+      UNIT: 'celsius'
+      MESSAGE_INTERVAL: 1000
+
+  fanSensor:
+    image: sensor:latest
+    container_name: fanSensor
+    environment:
+      MQTT_TOPIC: 'fan/speed'
+      MQTT_BROKER_HOST: 'mosquitto'
+      INITIAL_VALUE: 800
+      FLUCTUATION_SIZE: 30
+      MIN_VALUE: 400
+      MAX_VALUE: 1200
+      UNIT: 'rpm'
+      MESSAGE_INTERVAL: 2000
+
+  cpuSensor:
+    image: sensor:latest
+    container_name: cpuSensor
+    environment:
+      MQTT_TOPIC: 'cpu/utilization'
+      MQTT_BROKER_HOST: 'mosquitto'
+      INITIAL_VALUE: 30
+      FLUCTUATION_SIZE: 10
+      MIN_VALUE: 15
+      MAX_VALUE: 100
+      UNIT: '%'
+      MESSAGE_INTERVAL: 5000
+
+  localComponent:
+    image: local:latest
+    container_name: local-component
+    environment:
+      MQTT_BROKER_HOST: 'mosquitto'
+      MQTT_TOPICS: 'cpu/temperature,cpu/utilization,fan/speed'
+      WS_SERVER_URL: 'cloudComponent:8080'
+      CONFIRMATION_TIMEOUT: 5000
+
+  cloudComponent:
+    image: cloud:latest
+    container_name: cloud-component
+    environment:
+      PORT: 8080
