@@ -12,7 +12,7 @@ export class MessageRepository {
     value TEXT,
     unit TEXT,
     timestamp TEXT,
-    messageId INTEGER
+    messageId INTEGER UNIQUE
   )
 `);
   }
