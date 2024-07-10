@@ -24,7 +24,8 @@ You can run this application using Docker. Follow these steps:
      --env MIN_VALUE=30 \
      --env MAX_VALUE=80 \
      --env UNIT="celsius" \
-     --name sensor-app \
+     --env MESSAGE_INTERVAL=1000 \
+     --name sensor \
      sensor
    ```
 
@@ -71,4 +72,4 @@ These values can be adjusted by setting the corresponding environment variables.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the [MIT License](./LICENSE).

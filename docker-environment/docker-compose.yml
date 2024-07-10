@@ -9,7 +9,7 @@ services:
       - ./config:/mosquitto/config
 
   tempSensor:
-    image: sensor:latest
+    image: mateo9686/fog-sensor:latest
     container_name: tempSensor
     environment:
       MQTT_TOPIC: 'cpuTemperature'
@@ -18,11 +18,11 @@ services:
       FLUCTUATION_SIZE: 1
       MIN_VALUE: 30
       MAX_VALUE: 80
-      UNIT: 'celsius'
+      UNIT: '°C'
       MESSAGE_INTERVAL: 1000
 
   fanSensor:
-    image: sensor:latest
+    image: mateo9686/fog-sensor:latest
     container_name: fanSensor
     environment:
       MQTT_TOPIC: 'fanSpeed'
@@ -35,7 +35,7 @@ services:
       MESSAGE_INTERVAL: 2000
 
   cpuSensor:
-    image: sensor:latest
+    image: mateo9686/fog-sensor:latest
     container_name: cpuSensor
     environment:
       MQTT_TOPIC: 'cpuUtilization'
@@ -48,7 +48,7 @@ services:
       MESSAGE_INTERVAL: 5000
 
   localComponent:
-    image: local:latest
+    image: mateo9686/fog-local-component:latest
     container_name: local-component
     environment:
       MQTT_BROKER_HOST: 'mosquitto'
@@ -57,7 +57,7 @@ services:
       CONFIRMATION_TIMEOUT: 5000
 
   cloudComponent:
-    image: cloud:latest
+    image: mateo9686/fog-cloud-component:latest
     container_name: cloud-component
     environment:
       PORT: 8080

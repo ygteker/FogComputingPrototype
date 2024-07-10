@@ -1,257 +1,81 @@
 # Fog Computing Prototyping Assignment
-# LocalServer
-
-This repository contains the code for the LocalServer component of the Fog Computing Prototype project.
 
 ## Table of Contents
 
-- [Introduction](#introduction)
+- [Architecture Overview](#architecture)
+- [Recovery Mechanisms](#recovery-mechanisms)
 - [Installation](#installation)
-- [Usage](#usage)
+- [Notes](#notes)
+- [Thought Process](#thought-process)
+- [License](#license)
 
-## Introduction
+## Architecture
 
-The LocalServer acts as a bridge between the Fog Nodes and the Cloud Server, enabling efficient data processing and communication within the fog computing network.
+<img alt="Architecture" src="./architecture.png">
+
+The system consists of three sensors that publish their measurements to the MQTT Message Broker. The local component subscribes to the topics used by the sensors and receives the data. It then starts processing it by adding every data point to the local SQLite DB with the delivered flag set to false. Next, it pushes the data point to the message queue.
+
+The message queue reacts to new messages by sending them via WebSocket. If the connection is closed, it keeps the data waiting for the connection to reopen. After sending the data to the Cloud Component, it waits a specified time period (3 seconds by default, configurable) for a confirmation. After receiving confirmation for a given message, it removes it from the queue and updates the delivered flag to true in the local DB. In case of a confirmation timeout, the message will be sent again.
+
+The Cloud Component hosts a WebSocket server and receives messages via WebSocket connections. After receiving a new message, it checks whether a message with this ID has not yet been stored in the local SQLite DB. If not, it stores the message and sends back the confirmation.
+
+## Recovery Mechanisms
+
+### Loosing Connection
+
+1. Connection Closure Handling:
+
+   - When the WebSocket connection is closed, the system halts sending data. New data points from the sensors continue to be added to the local SQLite DB with the delivered flag set to false and to the message queue, awaiting reconnection.
+
+1. Exponential Backoff for Reconnection Attempts:
+
+   - The local component attempts to reconnect to the WebSocket server using an exponential backoff strategy. The backoff times start at 1 second and double each time (e.g., 1, 2, 4, 8, 16, 32 seconds).
+   - After reaching the maximum backoff time of 32 seconds, the local component continues to retry at this interval until a successful reconnection is established.
+
+1. Handling Backlogged Messages:
+
+   - Upon successful reconnection, the local component sends all messages from the queue to the Cloud Component. This ensures that no data points are lost during the disconnection period.
+
+### Local Component Crash Recovery
+
+1. Restart Behavior:
+
+   - If the local component crashes and subsequently restarts, it initiates a recovery procedure. The component queries the local SQLite DB for all data points with the delivered flag set to false.
+   - These undelivered data points are re-added to the message queue for transmission.
+
+1. Ensuring Data Persistence:
+
+   - This process guarantees that no data points are lost due to a crash. The system maintains data integrity by ensuring all previously undelivered messages are sent after recovery.
 
 ## Installation
 
-To install and set up the LocalServer, follow these steps:
+### To run this project locally:
 
-1. Clone this repository to your local machine.
-2. Install the required dependencies by running `npm install`.
-3. Start the LocalServer by running `npm run start:dev`.
+1. Clone this repository
+2. refer to the readmes in component folders
 
-## Usage
+   - Sensor
+   - LocalServer
+   - CloudServer
 
-Once the LocalServer is up and running, you can perform various tasks, such as:
+### Running in docker
 
-- Registering new Fog Nodes.
+1. Clone the repository
+2. Go to `docker-environment` directory
+3. run `docker compose up -d`
 
-- Managing data processing and distribution.
-- Monitoring the status of connected Fog Nodes.
-
-## How it works?
-The local server receives data in the form of JSON with a value and a timestamp from IoT devices, such as sensors, via an MQTT broker in the fog. After receiving it, the data is structured and persisted in a database. The data is then sent to the cloud server via a WebSocket connection. After a message is sent, the local server expects a confirmation message with the corresponding ID from the cloud server. If the confirmation is not received or the connection is interrupted, the remaining messages are queued. For each outgoing message without confirmation, the local server waits for 4 seconds before attempting to send it again. Once the connection is reestablished or a confirmation is received, all the queued messages are sent immediately.
-
-## License
-
-This project is licensed under the [MIT License](./LICENSE).
-
-## CloudServer
-
-### Introduction
-
-CloudServer is a prototype for a fog computing solution that receives messages containing sensor data from an edge. It persists them and sends confirmation for each received message.
-
-### Installation
-
-1. Clone the repository: `git clone https://github.com/ygteker/CloudServer.git`
-2. Navigate to the project directory: `cd CloudServer`
-3. Install the required dependencies: `npm install`
-
-### How It Works
-
-The cloud server receives messages via a websocket from a local component in the fog network. The received message is restructured and saved in a database. After the message is persisted, the cloud server sends a confirmation message containing the id of the received message to confirm that it was processed.
-
-### Usage
-
-To run CloudServer, use the following command:
-
-```
-npm run start:dev
-```
-
-This will start the server and make it ready to receive incoming requests.
-
-## LocalServer
-
-### Introduction
-
-LocalServer is a Node.js application that acts as an intermediary between sensors and the cloud server in a fog computing network.
-
-### Installation
-
-1. Clone the repository: `git clone https://github.com/ygteker/LocalServer.git`
-2. Navigate to the project directory: `cd LocalServer`
-3. Install dependencies: `npm install`
-
-### How It Works
-
-LocalServer collects data from sensors and forwards it to the cloud server. It listens for incoming sensor data via MQTT and sends it to the cloud server via WebSocket.
-
-### Usage
-
-To run LocalServer, use the following command:
-
-```
-npm run start:dev
-```
-
-### Docker Setup
-
-1. Build the Docker image:
-
-   ```
-   npm run build:docker
-   ```
-
-   This will build a Docker image named `localserver`.
-
-2. Run the Docker container:
-   ```plaintext
-   docker run -d \
-     --env MQTT_TOPIC="sensor1/value" \
-     --env MQTT_BROKER_HOST="localhost" \
-     --name localserver-app \
-     localserver
-   ```
-   Adjust environment variables as needed.
-
-## Sensor Data Generator
-
-### Introduction
-
-This Node.js application simulates sensor data and sends it to an MQTT broker at specified intervals.
-
-### Installation
-
-1. Clone the repository: `git clone https://github.com/ygteker/SensorDataGenerator.git`
-2. Navigate to the project directory: `cd SensorDataGenerator`
-3. Install dependencies: `npm install`
-
-### How It Works
-
-The generator simulates a sensor by sending data to an MQTT broker. The values can fluctuate within defined limits.
-
-### Docker Setup
-
-1. Build the Docker image:
-
-   ```
-   npm run build:docker
-   ```
-
-   This will build a Docker image named `sensor`.
-
-2. Run the Docker container:
-   ```plaintext
-   docker run -d \
-     --env MQTT_TOPIC="sensor1/value" \
-     --env MQTT_BROKER_HOST="localhost" \
-     --env INITIAL_VALUE=50 \
-     --env FLUCTUATION_SIZE=1 \
-     --env MIN_VALUE=30 \
-     --env MAX_VALUE=80 \
-     --env UNIT="celsius" \
-     --name sensor-app \
-     sensor
-   ```
-   Adjust the environment variables as per your MQTT broker configuration and simulation requirements.
-
-### Environment Variables
-
-If not using Docker, you can also set these environment variables in a `.env` file in the root directory of the project:
-
-```plaintext
-MQTT_TOPIC="sensor1/value"
-MQTT_BROKER_HOST="localhost"
-INITIAL_VALUE=50
-FLUCTUATION_SIZE=1
-MIN_VALUE=30
-MAX_VALUE=80
-UNIT="celsius"
-MESSAGE_INTERVAL=1000 (in ms)
-```
-
-Adjust the `MQTT_BROKER_HOST` variable to match your MQTT broker's host address.
-
-### Default Simulation Parameters
-
-- **INITIAL_VALUE**: 50
-- **FLUCTUATION_SIZE**: 1
-- **MIN_VALUE**: 30
-- **MAX_VALUE**: 80
-- **MESSAGE_INTERVAL**: 1000
-
-### How to Run Locally
-
-1. Install dependencies with `npm install`.
-2. Start the application with `npm run start:dev`.
-
-### Notes
-
-- This application requires Node.js and npm to be installed on your system if running locally.
-- Ensure the MQTT broker specified in `MQTT_BROKER_HOST` is running and accessible from the application.
-# Sensor Data Generator
-
-This Node.js application generates simulated sensor data and publishes it regularly to an MQTT broker.
-
-## Docker Setup
-
-You can run this application using Docker. Follow these steps:
-
-1. Build the Docker image:
-
-   ```
-   npm run build:docker
-   ```
-
-   it is going to build a docker image named `sensor`
-
-2. Run the Docker container, setting the necessary environment variables:
-   ```plaintext
-   docker run -d \
-     --env MQTT_TOPIC="sensor1/value" \
-     --env MQTT_BROKER_HOST="localhost" \
-     --env INITIAL_VALUE=50 \
-     --env FLUCTUATION_SIZE=1 \
-     --env MIN_VALUE=30 \
-     --env MAX_VALUE=80 \
-     --env UNIT="celsius" \
-     --name sensor-app \
-     sensor
-   ```
-
-Adjust the environment variables (`MQTT_TOPIC`, `MQTT_BROKER_HOST`, `INITIAL_VALUE`, `FLUCTUATION_SIZE`, `MIN_VALUE`, `MAX_VALUE`, `UNIT`, `MESSAGE_INTERVAL`) as per your MQTT broker configuration and simulation requirements.
-
-## Environment Variables
-
-If not using Docker, you can also set these environment variables in a `.env` file in the root directory of the project:
-
-```plaintext
-MQTT_TOPIC="sensor1/value"
-MQTT_BROKER_HOST="localhost"
-INITIAL_VALUE=50
-FLUCTUATION_SIZE=1
-MIN_VALUE=30
-MAX_VALUE=80
-UNIT="celsius",
-MESSAGE_INTERVAL=1000 (in ms)
-```
-
-Adjust the `MQTT_BROKER_HOST` variable to match your MQTT broker's host address.
-
-## Default Simulation Parameters
-
-The application uses the following default simulation parameters:
-
-- **INITIAL_VALUE**: 50
-- **FLUCTUATION_SIZE**: 1
-- **MIN_VALUE**: 30
-- **MAX_VALUE**: 80
-- **MESSAGE_INTERVAL**: 1000
-
-These values can be adjusted by setting the corresponding environment variables.
-
-## How to Run Locally
-
-1. Install dependencies with `npm install`.
-2. Start the application with `npm run start:dev`.
+NOTE: requires `docker` installed
 
 ## Notes
 
 - This application requires Node.js and npm to be installed on your system if running locally.
 - Ensure the MQTT broker specified in `MQTT_BROKER_HOST` is running and accessible from the application.
-## Thoguht Process
+
+## Thought Process
+
 <img width="1182" alt="Screenshot 2024-07-10 at 22 46 10" src="https://github.com/ygteker/FogComputingPrototype/assets/30394534/69015094-e94d-4d3a-b479-dd2766971164">
 <img width="925" alt="Screenshot 2024-07-10 at 22 52 02" src="https://github.com/ygteker/FogComputingPrototype/assets/30394534/3db58454-2195-40d4-a473-1ec435f53263">
+
+## License
+
+This project is licensed under the [MIT License](./LICENSE).
