@@ -28,6 +28,9 @@ Once the LocalServer is up and running, you can perform various tasks, such as:
 - Managing data processing and distribution.
 - Monitoring the status of connected Fog Nodes.
 
+## How it works?
+The local server receives data in the form of JSON with a value and a timestamp from IoT devices, such as sensors, via an MQTT broker in the fog. After receiving it, the data is structured and persisted in a database. The data is then sent to the cloud server via a WebSocket connection. After a message is sent, the local server expects a confirmation message with the corresponding ID from the cloud server. If the confirmation is not received or the connection is interrupted, the remaining messages are queued. For each outgoing message without confirmation, the local server waits for 4 seconds before attempting to send it again. Once the connection is reestablished or a confirmation is received, all the queued messages are sent immediately.
+
 ## License
 
 This project is licensed under the [MIT License](./LICENSE).
