@@ -14,7 +14,7 @@ server.on('connection', (socket) => {
 
   socket.on('message', (message) => {
     const parsedMsg = JSON.parse(message.toString());
-    console.log(`Received message: ${parsedMsg}`);
+    console.log(`Received message: ${JSON.stringify(parsedMsg)}`);
     //TODO include after network is set up
     addData(parsedMsg).then(() => {
       socket.send(JSON.stringify({ id: parsedMsg.id }));
