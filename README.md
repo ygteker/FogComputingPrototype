@@ -1,7 +1,7 @@
 # Fog Computing Prototyping Assignment
 # LocalServer
 
-Welcome to the LocalServer repository! This repository contains the code for the LocalServer component of the Fog Computing Prototype project.
+This repository contains the code for the LocalServer component of the Fog Computing Prototype project.
 
 ## Table of Contents
 
@@ -11,7 +11,7 @@ Welcome to the LocalServer repository! This repository contains the code for the
 
 ## Introduction
 
-The LocalServer is a crucial component of the Fog Computing Prototype project. It acts as a bridge between the Fog Nodes and the Cloud Server, enabling efficient data processing and communication within the fog computing network.
+The LocalServer acts as a bridge between the Fog Nodes and the Cloud Server, enabling efficient data processing and communication within the fog computing network.
 
 ## Installation
 
